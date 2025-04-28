@@ -1,83 +1,126 @@
 import streamlit as st
 import pandas as pd
 import joblib
+import plotly.express as px
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
-# Load model ElasticNet
-elastic_model = joblib.load('elasticnet_model.pkl')
+# Title
+st.title("🚀 Income and Work-Life Balance Dashboard")
 
-# Load data dari CSV yang diupload
-df = pd.read_csv('Wellbeing_and_lifestyle_data_Kaggle.csv')
+# Upload Data
+uploaded_file = st.file_uploader("Upload file Wellbeing_and_lifestyle_data_Kaggle.csv", type=["csv"])
 
-# Periksa beberapa baris pertama untuk memverifikasi apakah data terbaca dengan benar
-st.write(df.head())
+if uploaded_file:
+    # Load Data
+    df = pd.read_csv(uploaded_file)
+    st.success("✅ File berhasil dimuat!")
 
-# Menangani NaN dan memastikan data numerik
-df[['TODO_COMPLETED', 'SUFFICIENT_INCOME', 'DAILY_STRESS', 'FRUITS_VEGGIES', 'ACHIEVEMENT']] = df[['TODO_COMPLETED', 'SUFFICIENT_INCOME', 'DAILY_STRESS', 'FRUITS_VEGGIES', 'ACHIEVEMENT']].fillna(0)  # Mengganti NaN dengan 0
+    # Mapping kolom income dan gender
+    if 'income' in df.columns:
+        df['income'] = df['income'].map({1: '>50K', 0: '<=50K'})
+    
+    if 'gender_Male' in df.columns:
+        df['gender'] = df['gender_Male'].map({True: 'Male', False: 'Female'})
 
-# Pastikan hanya memilih kolom numerik untuk scaling
-numeric_columns = df[['TODO_COMPLETED', 'SUFFICIENT_INCOME', 'DAILY_STRESS', 'FRUITS_VEGGIES', 'ACHIEVEMENT']].select_dtypes(include=['number'])
+    # Cek Unik Value Income dan Gender
+    st.subheader("🔎 Cek Nilai Unik Income dan Gender")
+    st.write("Unique income values:", df['income'].unique())
+    st.dataframe(df[['income', 'gender_Male']].head(20))
+    st.divider()
 
-# Scaling fitur untuk model ElasticNet
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(numeric_columns)
+    # Preview Data
+    st.subheader("📄 Preview Data")
+    st.dataframe(df.head())
+    st.write("List kolom:", df.columns.tolist())
+    st.divider()
 
-# Prediksi dengan ElasticNet
-predictions = elastic_model.predict(X_scaled)
+    # 📊 Distribusi Umur
+    st.subheader("📊 Distribusi Umur Pekerja")
+    if "age" in df.columns:
+        fig_age = px.histogram(df, x="age", nbins=20, title="Distribusi Umur")
+        st.plotly_chart(fig_age)
+        st.divider()
 
-# Menampilkan judul aplikasi
-st.title("Dashboard Analisis Keseimbangan Kerja-Hidup")
+    # 🛠 Rata-rata Jam Kerja per Workclass
+    st.subheader("🛠 Rata-rata Jam Kerja per Workclass")
+    if "workclass" in df.columns and "hours_per_week" in df.columns:
+        avg_hours = df.groupby('workclass')['hours_per_week'].mean().reset_index()
+        fig_hours = px.bar(avg_hours, x="workclass", y="hours_per_week", title="Rata-rata Jam Kerja per Workclass")
+        st.plotly_chart(fig_hours)
+        st.divider()
 
-# Pilar 1: Menampilkan Insight Prediksi
-st.subheader("Prediksi Keseimbangan Kerja-Hidup")
-st.write("Hasil prediksi menggunakan model ElasticNet untuk skor keseimbangan kerja-hidup adalah sebagai berikut:")
+    # 💵 Perbandingan Income
+    st.subheader("💵 Perbandingan Income (<=50K vs >50K)")
+    if "income" in df.columns:
+        fig_income = px.pie(df, names="income", title="Distribusi Income")
+        st.plotly_chart(fig_income)
+        st.divider()
 
-# Tampilkan tabel hasil prediksi
-df['Prediksi Keseimbangan Kerja-Hidup'] = predictions
-st.dataframe(df[['TODO_COMPLETED', 'SUFFICIENT_INCOME', 'DAILY_STRESS', 'FRUITS_VEGGIES', 'ACHIEVEMENT', 'Prediksi Keseimbangan Kerja-Hidup']])
+    # 💼 Income Berdasarkan Pekerjaan (>50K)
+    st.subheader("💼 Income Berdasarkan Pekerjaan (>50K)")
+    if "occupation" in df.columns and "income" in df.columns:
+        occ_income = df[df['income'] == ">50K"]
+        if not occ_income.empty:
+            occ_income = occ_income.groupby('occupation').size().reset_index(name="count")
+            fig_occ_income = px.bar(occ_income, x="occupation", y="count", title="Pekerjaan yang Banyak Menghasilkan >50K")
+            st.plotly_chart(fig_occ_income)
+            st.divider()
 
-# Pilar 2: Visualisasi Data untuk Analisis
-st.subheader("Visualisasi Data")
+    # 👨‍👩‍👧‍👦 Income Berdasarkan Gender
+    st.subheader("👨‍👩‍👧‍👦 Income Berdasarkan Gender")
+    if "gender" in df.columns and "income" in df.columns:
+        sex_income = df.groupby(['gender', 'income']).size().reset_index(name="count")
+        if not sex_income.empty:
+            fig_sex_income = px.bar(sex_income, x="gender", y="count", color="income", barmode="group", title="Income Berdasarkan Gender")
+            st.plotly_chart(fig_sex_income)
+            st.divider()
 
-# Visualisasi hubungan antara stres dan keseimbangan kerja-hidup
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x=df['DAILY_STRESS'], y=df['WORK_LIFE_BALANCE_SCORE'], color='teal')
-plt.title("Hubungan Antara Stres Harian dan Skor Keseimbangan Kerja-Hidup")
-plt.xlabel("Stres Harian")
-plt.ylabel("Skor Keseimbangan Kerja-Hidup")
-st.pyplot()
+    # 📈 Income Berdasarkan Kelompok Umur
+    st.subheader("📈 Income Berdasarkan Kelompok Umur")
+    if "age_group" in df.columns and "income" in df.columns:
+        agegroup_income = df.groupby(['age_group', 'income']).size().reset_index(name="count")
+        fig_age_income = px.bar(agegroup_income, x="age_group", y="count", color="income", barmode="group", title="Income Berdasarkan Kelompok Umur")
+        st.plotly_chart(fig_age_income)
+        st.divider()
 
-# Visualisasi distribusi skor keseimbangan kerja-hidup
-plt.figure(figsize=(8, 6))
-sns.histplot(df['WORK_LIFE_BALANCE_SCORE'], bins=10, kde=True, color='blue')
-plt.title("Distribusi Skor Keseimbangan Kerja-Hidup")
-plt.xlabel("Skor Keseimbangan Kerja-Hidup")
-plt.ylabel("Frekuensi")
-st.pyplot()
+    # 🌎 Sebaran Negara Asal
+    st.subheader("🌎 Sebaran Negara Asal")
+    if "native_country" in df.columns:
+        country_count = df['native_country'].value_counts().reset_index()
+        country_count.columns = ['native_country', 'count']
+        fig_country = px.bar(country_count, x="native_country", y="count",
+                             labels={'native_country': 'Country', 'count': 'Count'},
+                             title="Sebaran Negara Asal")
+        st.plotly_chart(fig_country)
+        st.divider()
 
-# Pilar 3: Metrik Evaluasi Model
-st.subheader("Evaluasi Model ElasticNet")
-ols_r2 = r2_score(df['WORK_LIFE_BALANCE_SCORE'], predictions)
-ols_mse = mean_squared_error(df['WORK_LIFE_BALANCE_SCORE'], predictions)
-ols_mae = mean_absolute_error(df['WORK_LIFE_BALANCE_SCORE'], predictions)
+    # 🔗 Korelasi Umur vs Jam Kerja (Rata-rata per Kelompok Umur)
+    st.subheader("🔗 Rata-rata Jam Kerja per Kelompok Umur")
+    if "age" in df.columns and "hours_per_week" in df.columns:
+        df['age_bin'] = pd.cut(df['age'], bins=[0,20,30,40,50,60,70,80,100], labels=['0-20','21-30','31-40','41-50','51-60','61-70','71-80','81-100'])
+        age_hours = df.groupby('age_bin')['hours_per_week'].mean().reset_index()
+        fig_line = px.line(age_hours, x='age_bin', y='hours_per_week', title="Rata-rata Jam Kerja per Kelompok Umur")
+        st.plotly_chart(fig_line)
+        st.divider()
 
-# Menampilkan metrik
-st.write(f"R² (Koefisien Determinasi): {ols_r2:.4f}")
-st.write(f"Mean Squared Error (MSE): {ols_mse:.4f}")
-st.write(f"Mean Absolute Error (MAE): {ols_mae:.4f}")
+    # 📊 Distribusi Income berdasarkan Relationship
+    st.subheader("📊 Distribusi Income berdasarkan Relationship")
+    if "relationship" in df.columns and "income" in df.columns:
+        rel_income = df.groupby(['relationship', 'income']).size().reset_index(name='count')
+        fig_rel_income = px.bar(rel_income, x='relationship', y='count', color='income', barmode='group',
+                                title="Income Berdasarkan Relationship")
+        st.plotly_chart(fig_rel_income)
+        st.divider()
 
-# Pilar 4: Analisis Korelasi Fitur
-st.subheader("Korelasi Antar Fitur")
-correlation_matrix = df[['TODO_COMPLETED', 'SUFFICIENT_INCOME', 'DAILY_STRESS', 'FRUITS_VEGGIES', 'ACHIEVEMENT', 'WORK_LIFE_BALANCE_SCORE']].corr()
+    # 📊 Distribusi Relationship berdasarkan Gender
+    st.subheader("📊 Distribusi Relationship berdasarkan Gender")
+    if "relationship" in df.columns and "gender" in df.columns:
+        rel_gender = df.groupby(['relationship', 'gender']).size().reset_index(name='count')
+        fig_rel_gender = px.bar(rel_gender, x='relationship', y='count', color='gender', barmode='group',
+                                title="Relationship Berdasarkan Gender")
+        st.plotly_chart(fig_rel_gender)
+        st.divider()
 
-# Plot korelasi
-plt.figure(figsize=(8, 6))
-sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt=".2f")
-plt.title("Matriks Korelasi Antar Fitur")
-st.pyplot()
-
-# Menambahkan komentar atau insight tambahan
-st.write("Insight dari analisis menunjukkan korelasi kuat antara stres harian dan keseimbangan kerja-hidup.")
