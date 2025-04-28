@@ -10,7 +10,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 elastic_model = joblib.load('elasticnet_model.pkl')
 
 # Load data dari CSV yang diupload
-df = pd.read_csv('/mnt/data/Wellbeing_and_lifestyle_data_Kaggle.csv')
+df = pd.read_csv('Wellbeing_and_lifestyle_data_Kaggle.csv')
 
 # Periksa beberapa baris pertama untuk memverifikasi apakah data terbaca dengan benar
 st.write(df.head())
