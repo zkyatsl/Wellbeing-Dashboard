@@ -9,20 +9,12 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 # Load model ElasticNet
 elastic_model = joblib.load('elasticnet_model.pkl')
 
-# Load data (misalnya, dari CSV atau DataFrame yang ada)
-# df = pd.read_csv("your_data.csv")
 
-# Menggunakan data contoh jika dataset belum tersedia
-data = {
-    'TODO_COMPLETED': [5, 10, 3, 8],
-    'SUFFICIENT_INCOME': [1, 2, 1, 2],
-    'DAILY_STRESS': [4, 3, 5, 2],
-    'FRUITS_VEGGIES': [3, 5, 2, 4],
-    'ACHIEVEMENT': [3, 7, 5, 4],
-    'WORK_LIFE_BALANCE_SCORE': [650, 700, 600, 675]
-}
+# Load data dari CSV yang diupload
+df = pd.read_csv('D:\#Perkuliahan\Datmin\fastapi\Wellbeing_and_lifestyle_data_Kaggle.csv')
 
-df = pd.DataFrame(data)
+# Periksa beberapa baris pertama untuk memverifikasi apakah data terbaca dengan benar
+st.write(df.head())
 
 # Scaling fitur untuk model ElasticNet
 scaler = StandardScaler()
