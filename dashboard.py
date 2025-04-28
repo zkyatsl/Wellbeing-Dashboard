@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import joblib
-import plotly.express as px
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import StandardScaler
@@ -10,16 +9,21 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 # Load model ElasticNet
 elastic_model = joblib.load('elasticnet_model.pkl')
 
-
 # Load data dari CSV yang diupload
-df = pd.read_csv('Wellbeing_and_lifestyle_data_Kaggle.csv')
+df = pd.read_csv('/mnt/data/Wellbeing_and_lifestyle_data_Kaggle.csv')
 
 # Periksa beberapa baris pertama untuk memverifikasi apakah data terbaca dengan benar
 st.write(df.head())
 
+# Menangani NaN dan memastikan data numerik
+df[['TODO_COMPLETED', 'SUFFICIENT_INCOME', 'DAILY_STRESS', 'FRUITS_VEGGIES', 'ACHIEVEMENT']] = df[['TODO_COMPLETED', 'SUFFICIENT_INCOME', 'DAILY_STRESS', 'FRUITS_VEGGIES', 'ACHIEVEMENT']].fillna(0)  # Mengganti NaN dengan 0
+
+# Pastikan hanya memilih kolom numerik untuk scaling
+numeric_columns = df[['TODO_COMPLETED', 'SUFFICIENT_INCOME', 'DAILY_STRESS', 'FRUITS_VEGGIES', 'ACHIEVEMENT']].select_dtypes(include=['number'])
+
 # Scaling fitur untuk model ElasticNet
 scaler = StandardScaler()
-X_scaled = scaler.fit_transform(df[['TODO_COMPLETED', 'SUFFICIENT_INCOME', 'DAILY_STRESS', 'FRUITS_VEGGIES', 'ACHIEVEMENT']])
+X_scaled = scaler.fit_transform(numeric_columns)
 
 # Prediksi dengan ElasticNet
 predictions = elastic_model.predict(X_scaled)
