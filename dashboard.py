@@ -12,7 +12,7 @@ elastic_model = joblib.load('elasticnet_model.pkl')
 
 
 # Load data dari CSV yang diupload
-df = pd.read_csv('D:\#Perkuliahan\Datmin\fastapi\Wellbeing_and_lifestyle_data_Kaggle.csv')
+df = pd.read_csv('fastapi\Wellbeing_and_lifestyle_data_Kaggle.csv')
 
 # Periksa beberapa baris pertama untuk memverifikasi apakah data terbaca dengan benar
 st.write(df.head())
