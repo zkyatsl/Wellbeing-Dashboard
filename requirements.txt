@@ -3,3 +3,7 @@ pydantic
 scikit-learn
 pandas
 plotly
+streamlit
+joblib
+matplotlib
+seaborn
